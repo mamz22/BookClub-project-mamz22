@@ -4,17 +4,26 @@ from db_connection import get_connection
 def get_all_books_with_avg_rating():
     conn = get_connection()
     cursor = conn.cursor()
-    query = '''
-    SELECT Book.Title, Book.Author, AVG(BookRating.Rating) AS AverageRating
-    FROM Book
-    JOIN BookRating ON Book.BookID = BookRating.BookID
-    GROUP BY Book.BookID;
-    '''
+    query = """
+        SELECT  B.Title,
+                B.Author,
+                ROUND(AVG(R.Rating),2)  AS AvgRating,
+                RatingLabel(AVG(R.Rating)) AS Label
+        FROM    Book B
+        LEFT JOIN BookRating R ON B.BookID = R.BookID
+        GROUP BY B.BookID;
+    """
     cursor.execute(query)
     results = cursor.fetchall()
+
     print("\nBooks with Average Ratings:")
-    for title, author, avg in results:
-        print(f"- {title} by {author} | Rating: {round(avg, 2)}")
+    for title, author, avg, label in results:
+        if avg is None:
+            # handle books that truly have no rating rows
+            print(f"- {title} by {author} | No ratings yet")
+        else:
+            print(f"- {title} by {author} | {avg:.2f} ({label})")
+
     cursor.close()
     conn.close()
 
@@ -41,7 +50,10 @@ def get_comments_for_book(book_id):
     conn = get_connection()
     cursor = conn.cursor()
     query = '''
-    SELECT Book.Title, BookComment.Content, User.Username
+    SELECT 
+        Book.Title, 
+        BookComment.Content, 
+        User.Username
     FROM BookComment
     JOIN Book ON BookComment.BookID = Book.BookID
     JOIN User ON BookComment.UserID = User.UserID
@@ -63,7 +75,9 @@ def get_discussion_comments(club_id):
     # First, show all discussions in the club
     print(f"\n Discussions in Club ID {club_id}:")
     cursor.execute('''
-        SELECT DiscussionID, Topic
+        SELECT 
+            DiscussionID, 
+            Topic
         FROM BookDiscussion
         WHERE ClubID = %s;
     ''', (club_id,))
@@ -122,10 +136,13 @@ def get_top_rated_books():
     conn = get_connection()
     cursor = conn.cursor()
     query = '''
-    SELECT Book.Title, Book.Author, AVG(BookRating.Rating) AS AverageRating
-    FROM Book
-    JOIN BookRating ON Book.BookID = BookRating.BookID
-    GROUP BY Book.BookID
+    SELECT  
+        B.Title,
+        B.Author,
+        ROUND(AVG(R.Rating),2) AS AverageRating
+    FROM Book B
+    JOIN BookRating R ON B.BookID = R.BookID
+    GROUP BY B.BookID
     HAVING AverageRating >= 4.0
     ORDER BY AverageRating DESC;
     '''
