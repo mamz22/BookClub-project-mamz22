@@ -83,3 +83,17 @@ BEGIN
 END;
 //
 DELIMITER ;
+
+DELIMITER //
+CREATE FUNCTION RatingLabel(p DECIMAL(3,1))
+RETURNS VARCHAR(10) DETERMINISTIC
+BEGIN
+    RETURN CASE
+        WHEN p >= 4.5 THEN 'Excellent'
+        WHEN p >= 3.5 THEN 'Good'
+        WHEN p >= 2.5 THEN 'Okay'
+        WHEN p >= 1.5 THEN 'Poor'
+        ELSE 'Bad'
+    END;
+END;//
+DELIMITER ;
